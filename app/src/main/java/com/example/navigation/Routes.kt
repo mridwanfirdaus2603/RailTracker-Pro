@@ -16,3 +16,9 @@ object Stations
 
 @Serializable
 data class TrainDetail(val trainId: String)
+
+@Serializable
+object History
+
+@Serializable
+data class StationDetail(val stationId: String)

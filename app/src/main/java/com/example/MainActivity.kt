@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DynamicFeed
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Train
@@ -15,19 +16,29 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.data.AppDatabase
+import com.example.data.TravelRepository
 import com.example.navigation.Feed
+import com.example.navigation.History
 import com.example.navigation.Map
 import com.example.navigation.Schedule
 import com.example.navigation.Stations
+import com.example.navigation.StationDetail
 import com.example.navigation.TrainDetail
 import com.example.ui.screens.FeedScreen
+import com.example.ui.screens.HistoryScreen
+import com.example.ui.screens.HistoryViewModel
+import com.example.ui.screens.HistoryViewModelFactory
 import com.example.ui.screens.MapScreen
 import com.example.ui.screens.ScheduleScreen
 import com.example.ui.screens.StationsScreen
+import com.example.ui.screens.StationDetailScreen
 import com.example.ui.screens.TrainDetailScreen
 import com.example.ui.theme.MyApplicationTheme
 
@@ -47,13 +58,19 @@ class MainActivity : ComponentActivity() {
 fun RailTrackApp() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    // To check current route we can use the canonical name of the object.
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val isTopLevelRoute = currentRoute?.contains("com.example.navigation.Feed") == true ||
-            currentRoute?.contains("com.example.navigation.Map") == true ||
-            currentRoute?.contains("com.example.navigation.Schedule") == true ||
-            currentRoute?.contains("com.example.navigation.Stations") == true
+    val isTopLevelRoute = currentRoute?.contains("Feed") == true ||
+            currentRoute?.contains("Map") == true ||
+            currentRoute?.contains("Schedule") == true ||
+            currentRoute?.contains("Stations") == true ||
+            currentRoute?.contains("History") == true
+
+    // Initialize DB and ViewModel
+    val context = LocalContext.current
+    val database = AppDatabase.getDatabase(context)
+    val repository = TravelRepository(database.travelHistoryDao())
+    val historyViewModel: HistoryViewModel = viewModel(factory = HistoryViewModelFactory(repository))
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -110,6 +127,18 @@ fun RailTrackApp() {
                         icon = { Icon(Icons.Default.DynamicFeed, contentDescription = "Feed") },
                         label = { Text("Feed") }
                     )
+                    NavigationBarItem(
+                        selected = currentRoute?.contains("History") == true,
+                        onClick = {
+                            navController.navigate(History) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        icon = { Icon(Icons.Default.History, contentDescription = "Logs") },
+                        label = { Text("Logs") }
+                    )
                 }
             }
         }
@@ -129,13 +158,20 @@ fun RailTrackApp() {
                 ScheduleScreen()
             }
             composable<Stations> {
-                StationsScreen()
+                StationsScreen(onNavigateToStation = { id -> navController.navigate(StationDetail(id)) })
+            }
+            composable<History> {
+                HistoryScreen(viewModel = historyViewModel)
             }
             composable<TrainDetail> { backStackEntry ->
-                // Basic destination
-                // val detail = backStackEntry.toRoute<TrainDetail>()
                 TrainDetailScreen(
                     trainId = "1",
+                    onNavigateBack = { navController.navigateUp() }
+                )
+            }
+            composable<StationDetail> { backStackEntry ->
+                StationDetailScreen(
+                    stationId = "GMR",
                     onNavigateBack = { navController.navigateUp() }
                 )
             }

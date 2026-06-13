@@ -9,17 +9,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(modifier: Modifier = Modifier) {
     val scrollState = rememberScrollState()
+    var isRefreshing by remember { mutableStateOf(false) }
+    var lastUpdated by remember { mutableStateOf("Just now") }
+    var train82Delay by remember { mutableStateOf("+15 MIN") }
+    val coroutineScope = rememberCoroutineScope()
     
     Column(
         modifier = modifier
@@ -28,17 +35,34 @@ fun ScheduleScreen(modifier: Modifier = Modifier) {
             .padding(bottom = 80.dp)
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text("GMR", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text("GMR", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    }
+                    Text("LIVE BOARD", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Text("LIVE BOARD", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                
+                IconButton(onClick = {
+                    coroutineScope.launch {
+                        isRefreshing = true
+                        delay(1000)
+                        lastUpdated = "Updated just now"
+                        train82Delay = "+18 MIN" // Simulation of delay increase
+                        isRefreshing = false
+                    }
+                }) {
+                    Icon(if(isRefreshing) Icons.Default.Warning else Icons.Default.Refresh, contentDescription = "Refresh", tint = MaterialTheme.colorScheme.primary)
+                }
             }
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Gambir Station", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+                Text("Gambir Station", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text(lastUpdated, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+            }
             
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedTextField(
@@ -55,6 +79,10 @@ fun ScheduleScreen(modifier: Modifier = Modifier) {
             )
         }
 
+        if (isRefreshing) {
+             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+
         Column(modifier = Modifier.verticalScroll(scrollState).padding(horizontal = 16.dp)) {
             TrainRowItem(
                 time = "14:45",
@@ -67,7 +95,7 @@ fun ScheduleScreen(modifier: Modifier = Modifier) {
             )
             TrainRowItem(
                 time = "15:00",
-                status = "+15 MIN",
+                status = train82Delay,
                 name = "Taksaka",
                 number = "KA 82 • Executive",
                 destination = "Yogyakarta",
