@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -15,8 +16,10 @@ import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -143,46 +146,63 @@ fun RailTrackApp() {
             }
         }
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = com.example.navigation.Splash,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable<com.example.navigation.Splash> {
-                com.example.ui.screens.SplashScreen(
-                    onNavigateToMain = {
-                        navController.navigate(Feed) {
-                            popUpTo(com.example.navigation.Splash) { inclusive = true }
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            NavHost(
+                navController = navController,
+                startDestination = com.example.navigation.Splash,
+            ) {
+                composable<com.example.navigation.Splash> {
+                    com.example.ui.screens.SplashScreen(
+                        onNavigateToMain = {
+                            navController.navigate(Feed) {
+                                popUpTo(com.example.navigation.Splash) { inclusive = true }
+                            }
                         }
-                    }
-                )
+                    )
+                }
+                composable<Feed> {
+                    FeedScreen(onNavigateToTrainDetail = { id -> navController.navigate(TrainDetail(id)) })
+                }
+                composable<Map> {
+                    MapScreen(onNavigateToTrainDetail = { id -> navController.navigate(TrainDetail(id)) })
+                }
+                composable<Schedule> {
+                    ScheduleScreen()
+                }
+                composable<Stations> {
+                    StationsScreen(onNavigateToStation = { id -> navController.navigate(StationDetail(id)) })
+                }
+                composable<History> {
+                    HistoryScreen(viewModel = historyViewModel)
+                }
+                composable<TrainDetail> { backStackEntry ->
+                    TrainDetailScreen(
+                        trainId = "1",
+                        onNavigateBack = { navController.navigateUp() }
+                    )
+                }
+                composable<StationDetail> { backStackEntry ->
+                    StationDetailScreen(
+                        stationId = "GMR",
+                        onNavigateBack = { navController.navigateUp() }
+                    )
+                }
             }
-            composable<Feed> {
-                FeedScreen(onNavigateToTrainDetail = { id -> navController.navigate(TrainDetail(id)) })
-            }
-            composable<Map> {
-                MapScreen(onNavigateToTrainDetail = { id -> navController.navigate(TrainDetail(id)) })
-            }
-            composable<Schedule> {
-                ScheduleScreen()
-            }
-            composable<Stations> {
-                StationsScreen(onNavigateToStation = { id -> navController.navigate(StationDetail(id)) })
-            }
-            composable<History> {
-                HistoryScreen(viewModel = historyViewModel)
-            }
-            composable<TrainDetail> { backStackEntry ->
-                TrainDetailScreen(
-                    trainId = "1",
-                    onNavigateBack = { navController.navigateUp() }
-                )
-            }
-            composable<StationDetail> { backStackEntry ->
-                StationDetailScreen(
-                    stationId = "GMR",
-                    onNavigateBack = { navController.navigateUp() }
-                )
+            
+            // Watermark
+            if (isTopLevelRoute && currentRoute?.contains("Splash") != true) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 8.dp),
+                    modifier = Modifier.align(androidx.compose.ui.Alignment.BottomEnd)
+                ) {
+                    Text(
+                        text = "Made By Ridwan",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }
             }
         }
     }
