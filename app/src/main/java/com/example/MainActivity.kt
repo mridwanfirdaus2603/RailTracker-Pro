@@ -75,7 +75,7 @@ fun RailTrackApp() {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (isTopLevelRoute || currentRoute == null) {
+            if (isTopLevelRoute && currentRoute?.contains("Splash") != true) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
                 ) {
@@ -145,9 +145,18 @@ fun RailTrackApp() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Feed,
+            startDestination = com.example.navigation.Splash,
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable<com.example.navigation.Splash> {
+                com.example.ui.screens.SplashScreen(
+                    onNavigateToMain = {
+                        navController.navigate(Feed) {
+                            popUpTo(com.example.navigation.Splash) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable<Feed> {
                 FeedScreen(onNavigateToTrainDetail = { id -> navController.navigate(TrainDetail(id)) })
             }

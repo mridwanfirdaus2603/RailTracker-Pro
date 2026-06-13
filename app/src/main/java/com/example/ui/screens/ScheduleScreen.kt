@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Refresh
@@ -18,6 +19,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import com.example.notifications.NotificationHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,6 +38,43 @@ fun ScheduleScreen(modifier: Modifier = Modifier) {
     var train82Delay by remember { mutableStateOf("+15 MIN") }
     val coroutineScope = rememberCoroutineScope()
     
+    val context = LocalContext.current
+    val notificationHelper = remember { NotificationHelper(context).apply { createNotificationChannel() } }
+    
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            Toast.makeText(context, "Notifications enabled", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    fun requestNotificationPermissionAndSchedule(trainName: String) {
+        val scheduleAction = {
+            notificationHelper.scheduleNotification(
+                "Train Alert: $trainName",
+                "Your train departs in 15 minutes. Please proceed to the platform.",
+                5000 // 5 seconds for demonstration
+            )
+            Toast.makeText(context, "Notification scheduled for $trainName", Toast.LENGTH_SHORT).show()
+        }
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            when (PackageManager.PERMISSION_GRANTED) {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) -> {
+                    scheduleAction()
+                }
+                else -> {
+                    // Try to schedule anyway, it might need permission first
+                    scheduleAction()
+                    launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        } else {
+            scheduleAction()
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -91,7 +138,8 @@ fun ScheduleScreen(modifier: Modifier = Modifier) {
                 number = "KA 1 • Luxury Sleeper",
                 destination = "Surabaya Pasar Turi",
                 platform = "3",
-                isDelayed = false
+                isDelayed = false,
+                onTrack = { requestNotificationPermissionAndSchedule("Argo Bromo Anggrek") }
             )
             TrainRowItem(
                 time = "15:00",
@@ -101,7 +149,8 @@ fun ScheduleScreen(modifier: Modifier = Modifier) {
                 destination = "Yogyakarta",
                 platform = "1",
                 isDelayed = true,
-                warning = "Technical Signal Issue"
+                warning = "Technical Signal Issue",
+                onTrack = { requestNotificationPermissionAndSchedule("Taksaka") }
             )
             TrainRowItem(
                 time = "15:30",
@@ -110,7 +159,8 @@ fun ScheduleScreen(modifier: Modifier = Modifier) {
                 number = "KA 56 • Priority",
                 destination = "Malang",
                 platform = "4",
-                isDelayed = false
+                isDelayed = false,
+                onTrack = { requestNotificationPermissionAndSchedule("Gajayana") }
             )
             TrainRowItem(
                 time = "16:10",
@@ -119,7 +169,8 @@ fun ScheduleScreen(modifier: Modifier = Modifier) {
                 number = "KA 78 • Executive",
                 destination = "Surabaya Pasar Turi",
                 platform = "-",
-                isDelayed = false
+                isDelayed = false,
+                onTrack = { requestNotificationPermissionAndSchedule("Sembrani") }
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -137,7 +188,8 @@ fun TrainRowItem(
     destination: String,
     platform: String,
     isDelayed: Boolean,
-    warning: String? = null
+    warning: String? = null,
+    onTrack: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -163,8 +215,15 @@ fun TrainRowItem(
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(name, style = MaterialTheme.typography.titleMedium, color = if(isDelayed) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary)
-            Text(number, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Column {
+                    Text(name, style = MaterialTheme.typography.titleMedium, color = if(isDelayed) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary)
+                    Text(number, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                IconButton(onClick = onTrack) {
+                    Icon(Icons.Default.Notifications, contentDescription = "Track Train", tint = MaterialTheme.colorScheme.primary)
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
