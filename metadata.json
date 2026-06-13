@@ -1,0 +1,6 @@
+{
+  "name": "RailTracker Pro",
+  "description": "RailTracker Pro is a real-time monitor for GAPEKA 2025 train schedules, equipped with a live map, station monitors, and feed.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
